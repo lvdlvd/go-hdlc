@@ -7,8 +7,11 @@ import (
 )
 
 var (
+	// ErrResynced is returned by Read when it had to discard bytes to find a flag.
 	ErrResynced = errors.New("resynced to hdlc flag")
-	ErrAbort    = errors.New("aborted hdlc frame")
+
+	// ErrAbort is returned by Read and ReadEscaped for frames that end in an ABORT rather than a FLAG.
+	ErrAbort = errors.New("aborted hdlc frame")
 )
 
 const bufSize = 8192 // we need to know for calls to peek, can't rely on bufio internal
@@ -16,7 +19,7 @@ const bufSize = 8192 // we need to know for calls to peek, can't rely on bufio i
 // Unframe returns a new Unframer that reads from r.
 func Unframe(r io.Reader) *Unframer { return &Unframer{r: bufio.NewReaderSize(r, bufSize)} }
 
-// An unframer is an io.Reader that returns one frame per call to Read.
+// Unframer is an io.Reader that returns one frame per call to Read.
 //
 // For receiving partial frames and resyncing, use Resync and ReadUnescaped.
 type Unframer struct {
@@ -31,6 +34,10 @@ type Unframer struct {
 // returned.
 // If err == ErrResynced, n is the number of bytes discarded
 // including flags, and p will be unmodified.
+//
+// The first Read on a stream written by a Framer will return 1, ErrResync
+// to catch up with the first flag.  Call Resync explicitly to discard that
+// upfront.
 func (u *Unframer) Read(p []byte) (n int, err error) {
 	n, err = u.Resync()
 	if n > 0 && err == nil {
@@ -109,25 +116,27 @@ func (u *Unframer) ReadEscaped(p []byte) (n int, err error) {
 			return n, io.ErrUnexpectedEOF
 		}
 		if err != nil {
-			return n, err
+			break
 		}
 
 		if val == FLAG {
 			u.lastwasflag = true
-			return n, nil
+			break
 		}
 		u.lastwasflag = false
 		if val == ABORT {
-			return n, ErrAbort
+			err = ErrAbort
+			break
 		}
 
 		if n >= len(p) {
 			// we have an esc or a value but we won't
 			// have room to write it, put it back for the next call
-			if err := u.r.UnreadByte(); err != nil {
-				return n, err
+			err = u.r.UnreadByte()
+			if err == nil {
+				err = bufio.ErrBufferFull
 			}
-			return n, bufio.ErrBufferFull
+			break
 		}
 
 		if val == ESC {
@@ -141,5 +150,6 @@ func (u *Unframer) ReadEscaped(p []byte) (n int, err error) {
 		p[n] = val
 		n++
 	}
-	panic("not reached")
+
+	return n, err
 }

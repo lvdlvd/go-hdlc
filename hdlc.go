@@ -1,4 +1,4 @@
-// package hdlc implements HDLC-like framing of packets on bytestreams.
+// Package hdlc implements HDLC-like framing of packets on bytestreams.
 //
 // The go io.Writer and io.Reader interfaces deal with turning slices into byte streams.
 // The semantics of the streams are up to the implementations, but almost always the
@@ -26,8 +26,9 @@
 //
 package hdlc
 
+// ESC, FLAG and ABORT are escaped in the stream by prefixing ESC and flipping bit 5.
 const (
 	ESC   = 0x7d
-	FLAG  = 0x7e
-	ABORT = 0x7f
+	FLAG  = 0x7e // Frame separator
+	ABORT = 0x7f // Abort a frame. Receiver should discard.
 )

@@ -13,8 +13,8 @@ func TestThatItWorks(t *testing.T) {
 
 	var slices [][]byte
 
-	for n := 0; n < 20000; n++ {
-		b := make([]byte, rand.Intn(50000))
+	for n := 0; n < 2000; n++ {
+		b := make([]byte, rand.Intn(10000))
 		for i := range b {
 			b[i] = byte(rand.Uint32())
 		}
@@ -48,3 +48,8 @@ func TestThatItWorks(t *testing.T) {
 	}
 
 }
+
+// TODO
+// func TestResync(t *testing.T)      {}
+// func TestAbort(t *testing.T)       {}
+// func TestTrailingEsc(t *testing.T) {}

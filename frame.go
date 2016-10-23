@@ -5,7 +5,11 @@ import (
 	"io"
 )
 
-// A framer adds framing information and escapes the payload.
+// A framer is an io.Writer that frames each
+// call to Write() into 1 frame.
+//
+// For sending partial and abortable frames
+// use Flag, WriteEscaped and Abort.
 type Framer struct {
 	w           io.Writer
 	lastwasflag bool
@@ -14,11 +18,7 @@ type Framer struct {
 // Frame returns a new framer that writes to w.
 func Frame(w io.Writer) *Framer { return &Framer{w: w} }
 
-// A framer is an io.Writer that frames each
-// call to Write() into 1 frame.
-//
-// For sending partial and abortable frames
-// use Flag, WriteEscaped and Abort.
+// Write adds framing information and escapes the payload.
 func (f *Framer) Write(p []byte) (n int, err error) {
 	if err = f.Flag(); err != nil {
 		return
@@ -64,10 +64,10 @@ func (f *Framer) WriteEscaped(p []byte) (n int, err error) {
 		}
 	}()
 
-	idx_esc, idx_flag, idx_abort := find(p, ESC), find(p, FLAG), find(p, ABORT)
+	idxEsc, idxFlag, idxAbort := find(p, ESC), find(p, FLAG), find(p, ABORT)
 	var nn int
 	for len(p) > 0 {
-		idx := min3(idx_esc, idx_flag, idx_abort)
+		idx := min3(idxEsc, idxFlag, idxAbort)
 		if idx > 0 {
 			nn, err = f.w.Write(p[:idx])
 			n += nn
@@ -93,18 +93,18 @@ func (f *Framer) WriteEscaped(p []byte) (n int, err error) {
 		idx++
 
 		p = p[idx:]
-		idx_esc -= idx
-		idx_flag -= idx
-		idx_abort -= idx
+		idxEsc -= idx
+		idxFlag -= idx
+		idxAbort -= idx
 
-		if idx_esc < 0 {
-			idx_esc = find(p, ESC)
+		if idxEsc < 0 {
+			idxEsc = find(p, ESC)
 		}
-		if idx_flag < 0 {
-			idx_flag = find(p, FLAG)
+		if idxFlag < 0 {
+			idxFlag = find(p, FLAG)
 		}
-		if idx_abort < 0 {
-			idx_abort = find(p, ABORT)
+		if idxAbort < 0 {
+			idxAbort = find(p, ABORT)
 		}
 	}
 	return
