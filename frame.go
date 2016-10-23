@@ -38,7 +38,7 @@ func (f *Framer) Flag() error {
 	if f.lastwasflag {
 		return nil
 	}
-	n, err := f.Write([]byte{FLAG})
+	n, err := f.w.Write([]byte{FLAG})
 	if n > 0 {
 		f.lastwasflag = true
 	}
@@ -50,7 +50,7 @@ func (f *Framer) Abort() error {
 	if f.lastwasflag {
 		return nil
 	}
-	_, err := f.Write([]byte{ABORT})
+	_, err := f.w.Write([]byte{ABORT})
 	return err
 }
 
@@ -80,7 +80,7 @@ func (f *Framer) WriteEscaped(p []byte) (n int, err error) {
 		}
 
 		// if we're here p[0] should be one of the control characters and we should escape it
-		nn, err = f.Write([]byte{ESC, p[idx] ^ 0x20})
+		nn, err = f.w.Write([]byte{ESC, p[idx] ^ 0x20})
 		if err != nil {
 			if nn > 0 {
 				// if this is our first value, and the escape was written but not the escaped
