@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// A framer is an io.Writer that frames each
+// Framer is an io.Writer that frames each
 // call to Write() into 1 frame.
 //
 // For sending partial and abortable frames
